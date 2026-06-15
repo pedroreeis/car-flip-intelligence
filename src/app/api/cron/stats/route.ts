@@ -5,6 +5,14 @@ export async function GET(request: Request) {
   // O Cron (ex: Vercel Cron) fará um GET nesta rota periodicamente.
   
   try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     // 1. Busca todos os casos encerrados
     const closedCases = await prisma.closedCase.findMany();
     const N = closedCases.length;

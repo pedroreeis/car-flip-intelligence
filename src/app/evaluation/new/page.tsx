@@ -44,7 +44,7 @@ export default function NewEvaluation() {
     if (formData.brand) {
       url += `&context=${encodeURIComponent(formData.brand)}`;
     }
-    fetch(url).then(r => r.json()).then(data => {
+    fetchWithAuth(url).then(r => r.json()).then(data => {
       if (Array.isArray(data)) setKbModels(data);
     });
   }, [formData.brand]);

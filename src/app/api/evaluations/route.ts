@@ -36,8 +36,7 @@ export async function POST(req: Request) {
     if (attractivenessScore > 60 && riskScore < 40) recommendation = 'COMPRAR';
     if (riskScore >= 50) recommendation = 'ALTO RISCO - NÃO COMPRAR';
     if (estimatedRoi < 10) recommendation = 'NÃO COMPRAR (BAIXA MARGEM)';
-    const { searchParams } = new URL(req.url);
-    const userId: string = searchParams.get('userId') || (authResult.uid as string) || 'anonymous';
+    const userId = authResult.uid as string;
 
     let dbUser = await prisma.user.findUnique({ where: { firebaseUid: userId } });
     if (!dbUser) {

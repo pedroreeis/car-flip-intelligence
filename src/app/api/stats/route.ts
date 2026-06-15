@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const authResult = await verifyAuth(request);
+    if (authResult.error) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
     const activeOps = await prisma.evaluation.count({
       where: {
         status: {
@@ -24,3 +30,4 @@ export async function GET() {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
