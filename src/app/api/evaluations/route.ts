@@ -52,6 +52,23 @@ export async function POST(req: Request) {
       }
     });
 
+    // Auto-adicionar à Base de Conhecimento
+    const updateKb = async (category: string, val: string) => {
+      const trimmed = val?.trim();
+      if (!trimmed) return;
+      const existing = await prisma.knowledgeBaseItem.findFirst({
+        where: { category, value: { equals: trimmed, mode: 'insensitive' } }
+      });
+      if (existing) {
+        await prisma.knowledgeBaseItem.update({ where: { id: existing.id }, data: { usageCount: existing.usageCount + 1 } });
+      } else {
+        await prisma.knowledgeBaseItem.create({ data: { category, value: trimmed, usageCount: 1 } });
+      }
+    };
+
+    if (data.brand && data.brand !== 'Desconhecida') await updateKb('BRAND', data.brand);
+    if (data.model && data.model !== 'Desconhecido') await updateKb('MODEL', data.model);
+
     const evalRecord = await prisma.evaluation.create({
       data: {
         userId: dbUser.id,

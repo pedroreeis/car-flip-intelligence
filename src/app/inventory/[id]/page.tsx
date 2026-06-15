@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PlusCircle, CheckCircle, Car, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { PlusCircle, CheckCircle, Car, DollarSign, TrendingUp, AlertCircle, FileText, Copy } from 'lucide-react';
 import styles from '@/app/evaluation/new/wizard.module.css';
 import pageStyles from '@/app/page.module.css';
 
@@ -12,14 +12,24 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [kbExpenses, setKbExpenses] = useState<any[]>([]);
   
   const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
   const [actualSalePrice, setActualSalePrice] = useState('');
+  
+  const [adCopy, setAdCopy] = useState('');
+  const [generatingAd, setGeneratingAd] = useState(false);
 
   const fetchExpenses = async () => {
     const res = await fetch(`/api/evaluations/${resolvedParams.id}/expenses`);
     const json = await res.json();
     setExpenses(json);
+  };
+
+  const fetchKb = async () => {
+    const res = await fetch('/api/kb?category=EXPENSE_TYPE');
+    const json = await res.json();
+    if (Array.isArray(json)) setKbExpenses(json);
   };
 
   useEffect(() => {
@@ -28,6 +38,7 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
       .then(setData);
     
     fetchExpenses();
+    fetchKb();
   }, [resolvedParams.id]);
 
   const addExpense = async () => {
@@ -61,6 +72,20 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const generateAdCopy = async () => {
+    setGeneratingAd(true);
+    try {
+      const res = await fetch(`/api/evaluations/${resolvedParams.id}/ad-copy`);
+      const data = await res.json();
+      if (data.copy) {
+        setAdCopy(data.copy);
+      }
+    } catch (error) {
+      console.error('Error generating ad copy', error);
+    }
+    setGeneratingAd(false);
   };
 
   if (!data) return <div style={{ color: '#fff', padding: '2rem' }}>Carregando dados do veículo...</div>;
@@ -135,11 +160,17 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
               <label>Nova Despesa / Reparo</label>
               <input 
                 type="text" 
+                list="kb-expenses"
                 className={styles.input} 
                 value={newExpense.description}
                 onChange={e => setNewExpense({...newExpense, description: e.target.value})}
                 placeholder="Ex: Polimento, Higienização, Troca de Óleo..."
               />
+              <datalist id="kb-expenses">
+                {kbExpenses.map(kb => (
+                  <option key={kb.id} value={kb.value} />
+                ))}
+              </datalist>
             </div>
             <div style={{ width: '200px' }}>
               <label>Custo (R$)</label>
@@ -157,6 +188,37 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
           </div>
 
           <hr style={{ border: 'none', borderTop: '1px dashed var(--border)', margin: '2rem 0' }} />
+
+          {/* Sessão de Marketing e Anúncios */}
+          <div style={{ background: '#f8fafc', border: '1px solid var(--border)', padding: '2rem', borderRadius: '12px', marginBottom: '2rem' }}>
+             <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>
+               <FileText size={24}/> Marketing & Anúncios
+             </h3>
+             <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+               Utilize os dados do laudo técnico (estrutura, mecânica e documentação) para gerar automaticamente um texto publicitário persuasivo (Copy) no padrão OLX / Webmotors.
+             </p>
+             
+             {!adCopy ? (
+               <button onClick={generateAdCopy} disabled={generatingAd} className={styles.btnPrimary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 {generatingAd ? 'Gerando Copy...' : 'Gerar Copy Profissional'}
+               </button>
+             ) : (
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                 <textarea 
+                   value={adCopy}
+                   onChange={(e) => setAdCopy(e.target.value)}
+                   style={{ width: '100%', height: '200px', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)', fontFamily: 'inherit', fontSize: '0.95rem', lineHeight: '1.5', resize: 'vertical' }}
+                 />
+                 <button 
+                   onClick={() => navigator.clipboard.writeText(adCopy)}
+                   className={styles.btnSecondary} 
+                   style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                 >
+                   <Copy size={16} /> Copiar para Área de Transferência
+                 </button>
+               </div>
+             )}
+          </div>
 
           {/* Sessão de Fechamento de Venda */}
           <div style={{ background: '#f0fdf4', border: '1px solid #22c55e', padding: '2rem', borderRadius: '12px', marginTop: '2rem' }}>

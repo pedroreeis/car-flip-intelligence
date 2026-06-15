@@ -98,3 +98,23 @@ model ClosedCase {
   
   createdAt       DateTime    @default(now())
 }
+
+model KnowledgeBaseItem {
+  id          String   @id @default(uuid())
+  category    String   // Ex: 'BRAND', 'MODEL', 'EXPENSE_TYPE'
+  value       String   // O texto padronizado
+  usageCount  Int      @default(1) // Frequência de uso para ordenar autocomplete
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([category, value]) // Para evitar duplicatas exatas na mesma categoria
+}
+
+model StatisticalMetrics {
+  id               String   @id @default("GLOBAL") // Padrão Singleton
+  sampleSize       Int      @default(0)
+  avgRoi           Float    @default(0)
+  stdDevRoi        Float    @default(0)
+  lastCalculatedAt DateTime @default(now())
+}
+

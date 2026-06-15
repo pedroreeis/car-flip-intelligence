@@ -31,6 +31,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     });
 
+    // Adiciona/Atualiza na Base de Conhecimento
+    const trimmedDesc = data.description.trim();
+    if (trimmedDesc) {
+      const existingKb = await prisma.knowledgeBaseItem.findFirst({
+        where: { category: 'EXPENSE_TYPE', value: { equals: trimmedDesc, mode: 'insensitive' } }
+      });
+      if (existingKb) {
+        await prisma.knowledgeBaseItem.update({
+          where: { id: existingKb.id },
+          data: { usageCount: existingKb.usageCount + 1 }
+        });
+      } else {
+        await prisma.knowledgeBaseItem.create({
+          data: { category: 'EXPENSE_TYPE', value: trimmedDesc, usageCount: 1 }
+        });
+      }
+    }
+
     return NextResponse.json(expense);
   } catch (error) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

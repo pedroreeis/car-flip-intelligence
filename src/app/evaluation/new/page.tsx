@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './wizard.module.css';
@@ -26,6 +26,18 @@ export default function NewEvaluation() {
     estruturaOk: true,
     mecanicaOk: true,
   });
+
+  const [kbBrands, setKbBrands] = useState<any[]>([]);
+  const [kbModels, setKbModels] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/kb?category=BRAND').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setKbBrands(data);
+    });
+    fetch('/api/kb?category=MODEL').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setKbModels(data);
+    });
+  }, []);
 
   if (loading) return <div>Carregando...</div>;
   if (!user) {
@@ -67,8 +79,14 @@ export default function NewEvaluation() {
         {step === 1 && (
           <div className={styles.stepContent}>
             <h2>1. Cadastro do Veículo</h2>
-            <input name="brand" placeholder="Marca" value={formData.brand} onChange={handleChange} className={styles.input} />
-            <input name="model" placeholder="Modelo" value={formData.model} onChange={handleChange} className={styles.input} />
+            <input name="brand" list="kb-brands" placeholder="Marca" value={formData.brand} onChange={handleChange} className={styles.input} />
+            <datalist id="kb-brands">
+              {kbBrands.map(b => <option key={b.id} value={b.value} />)}
+            </datalist>
+            <input name="model" list="kb-models" placeholder="Modelo" value={formData.model} onChange={handleChange} className={styles.input} />
+            <datalist id="kb-models">
+              {kbModels.map(m => <option key={m.id} value={m.value} />)}
+            </datalist>
             <input name="year" type="number" placeholder="Ano" value={formData.year} onChange={handleChange} className={styles.input} />
             <input name="vin" placeholder="VIN / Chassi (Opcional)" value={formData.vin} onChange={handleChange} className={styles.input} />
             <input name="askingPrice" type="number" placeholder="Preço Pedido (R$)" value={formData.askingPrice} onChange={handleChange} className={styles.input} />
