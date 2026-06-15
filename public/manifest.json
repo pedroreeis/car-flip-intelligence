@@ -1,0 +1,64 @@
+{
+  "id": "/",
+  "name": "Car Flip Intelligence",
+  "short_name": "CarFlip",
+  "description": "Plataforma Premium de Investimentos Automotivos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1528",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait-primary",
+  "display_override": [
+    "window-controls-overlay",
+    "minimal-ui",
+    "standalone"
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+carflip",
+      "url": "/?url=%s"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1024x576",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Painel de Investimentos - Desktop"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Avaliação e Estoque - Mobile"
+    }
+  ]
+}

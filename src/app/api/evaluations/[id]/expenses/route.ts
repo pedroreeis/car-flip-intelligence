@@ -1,0 +1,38 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const expenses = await prisma.expense.findMany({
+      where: { evaluationId: id },
+      orderBy: { date: 'asc' }
+    });
+    return NextResponse.json(expenses);
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const data = await req.json();
+    
+    if (!data.description || !data.amount) {
+       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    const expense = await prisma.expense.create({
+      data: {
+        evaluationId: id,
+        description: data.description,
+        amount: parseFloat(data.amount)
+      }
+    });
+
+    return NextResponse.json(expense);
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

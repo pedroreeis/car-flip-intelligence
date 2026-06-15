@@ -1,0 +1,63 @@
+O aplicativo será web ou desktop?
+R: Web, com a escolha do web podemos garantir uma multi plataforma para ios, android e desktop. Fazendo um design responsivo e que encaixe em todos os tamanhos de tela. Futuramente, será bem mais fácil de vender o software.
+
+Vai precisar fazer o login?
+R: Não, o aplicativo será algo privado, onde a empresa que for utilizar hospeda sua versão e utiliza com seus próprios funcionários.
+(Análise do Arquiteto: Para atender ao requisito de "Auditoria (importante)" e acompanhar o desempenho de cada comprador (quem acha os melhores carros? quem comete mais erros na inspeção?), será necessário no mínimo um login leve ou seleção de operador. A premissa de não ter login prejudica o valor dos dados operacionais e de auditoria.)
+
+Como será a base de conhecimento?
+R: Será um banco de dados onde o app buscará as informações necessárias para realizar os cálculos, para maior acertividade, a base de conhecimento será compartilhada entre todas as instâncias do aplicativo, mas sempre primando pela privacidade das informações. Onde cada empresa terá sua base de conhecimento e poderão compartilhar entre si se assim desejarem, algo como o open finance.
+
+O score deve ser calculada como?
+R: Através de um algoritmo de soma ponderada e normalizada (0 a 100). Baseia-se em quatro pilares: 1) Margem Financeira (Lucro Estimado vs Preço de Compra), 2) Liquidez do Mercado (Demanda e giro do modelo), 3) Risco Oculto (Checklist mecânico/estrutural) e 4) Fatores Penalizadores (Sinistro, Leilão).
+
+Quais campos serão obrigatórios?
+R: No Módulo 1 (Cadastro): Marca, Modelo, Ano, Preço Pedido e Origem. Nos demais módulos, nenhum campo é estritamente obrigatório, PORÉM, a ausência de dados derruba o 'Prediction Confidence' e aumenta o 'Score de Risco', inviabilizando a recomendação de compra até o preenchimento.
+
+Como modelar a base de defeitos?
+R: Um esquema relacional robusto. Entidade 'Defeito_Catalogo' (ID, Nome, Categoria, Sintomas). Entidade 'Caso_Real_Defeito' (ID_Avaliacao, ID_Defeito, Custo_Real, Tempo_Real, Resolvido). Um job de agregação atualiza o catálogo global com médias de custo/tempo baseadas no histórico.
+
+Como calcular confiança/segurança na previsão?
+R: Baseado no tamanho da amostra (N) de carros similares no histórico e na completude da inspeção atual. Fórmula base: `(Peso_Amostra * (N / N_Ideal)) - (Peso_Incerteza * Itens_Nao_Inspecionados)`. Poucos dados ou muita incerteza = baixa confiança (< 50%).
+
+Como modelar o banco de dados?
+R: PostgreSQL. Utilizaremos uma abordagem híbrida: modelagem estrita e relacional para o Motor Financeiro, Transações e Auditoria, e colunas JSONB para os checklists de inspeção (Estrutura, Mecânica), permitindo expansão flexível dos questionários sem alterar o schema do banco.
+
+Como integrar o app em plataformas de anúncios de carros para criar anuncios chamativos e profissionais?
+R: Para o MVP: Geração de texto "Copy" automatizada a partir do laudo do sistema (exaltando pontos fortes e procedência). Pós-MVP: Integração via APIs (Webmotors, OLX, Mercado Livre) para publicador automático.
+
+O que valorizar na primeira versão (MVP)?
+R: 1. Avaliação.
+2. Score.
+3. Lucro previsto.
+4. Caso encerrado.
+5. Aprendizado histórico.
+
+Qual pergunta o app deve responder com clareza?
+R: Responder à pergunta:
+
+"Vale a pena comprar este carro para revender?"
+
+Produzindo:
+
+Score de atratividade
+Score de risco
+Lucro estimado
+ROI estimado
+Prazo estimado de preparação
+Capital necessário
+Confiança da previsão
+Valor máximo recomendado para compra
+Recomendação final
+
+Exemplos:
+
+COMPRAR
+
+NEGOCIAR
+
+COMPRAR SOMENTE ABAIXO DE X
+
+ALTO RISCO
+
+NÃO COMPRAR

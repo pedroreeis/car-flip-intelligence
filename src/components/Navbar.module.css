@@ -1,0 +1,198 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  background-color: var(--primary-color);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.navContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  overflow: visible; /* allows dropdown to show outside */
+}
+
+.navLinks {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for a cleaner look */
+.navContainer::-webkit-scrollbar {
+  display: none;
+}
+.navContainer {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.navItem:hover {
+  color: #fff;
+}
+
+.active {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+/* Sub-Navbar (Breadcrumb area) */
+.subNavbar {
+  background-color: var(--secondary-color);
+  color: #fff;
+}
+
+.subNavContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.breadcrumbCard {
+  background-color: var(--primary-color);
+  display: inline-flex;
+  align-items: stretch;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  transform: skewX(-10deg);
+  margin-left: 1rem;
+}
+
+.breadcrumbHome {
+  background-color: #0b1528; /* Darker accent */
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  transform: skewX(10deg);
+}
+
+.breadcrumbActive {
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  transform: skewX(10deg);
+}
+
+.subNavIcons {
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  color: rgba(255,255,255,0.7);
+}
+
+/* User Menu & Dropdown */
+.userMenu {
+  position: relative;
+}
+
+.userMenuBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.userMenuBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  background: #0b1528;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: #fff;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.dropdownHeader {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdownHeader strong {
+  font-size: 0.95rem;
+  color: #111;
+}
+
+.dropdownHeader span {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: none;
+  padding: 1rem;
+  text-align: left;
+  color: #d32f2f;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+}
+
+.logoutBtn:hover {
+  background: #fef0f0;
+}
+

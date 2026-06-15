@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String       @id @default(uuid())
+  firebaseUid   String       @unique
+  name          String
+  email         String       @unique
+  evaluations   Evaluation[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Vehicle {
+  id            String       @id @default(uuid())
+  brand         String
+  model         String
+  year          Int
+  vin           String?      // Opcional
+  city          String?      // Opcional (Nova versão UI premium)
+  evaluations   Evaluation[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+enum EvaluationStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+  IN_STOCK
+  SOLD
+}
+
+model Evaluation {
+  id                String           @id @default(uuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  vehicleId         String
+  vehicle           Vehicle          @relation(fields: [vehicleId], references: [id])
+  
+  status            EvaluationStatus @default(DRAFT)
+  
+  // Modulo 1: Cadastro base
+  origin            String?
+  askingPrice       Float?
+  adLink            String?
+  
+  // Modulo 2: Mercado
+  fipePrice         Float?
+  estimatedSalePrice Float?
+  
+  // Módulos 3, 4, 5 (JSONB)
+  documentation     Json?
+  structure         Json?
+  mechanics         Json?
+  
+  // Resultados Calculados
+  totalInvestment   Float?
+  estimatedProfit   Float?
+  estimatedRoi      Float?
+  attractivenessScore Float?
+  riskScore         Float?
+  predictionConfidence Float?
+  recommendation    String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  closedCase        ClosedCase?
+  expenses          Expense[]
+}
+
+model Expense {
+  id           String     @id @default(uuid())
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+  description  String
+  amount       Float
+  date         DateTime   @default(now())
+}
+
+model ClosedCase {
+  id              String      @id @default(uuid())
+  evaluationId    String      @unique
+  evaluation      Evaluation  @relation(fields: [evaluationId], references: [id])
+  
+  actualSalePrice Float
+  actualCosts     Float
+  actualProfit    Float
+  actualRoi       Float
+  
+  preparationNotes String?
+  
+  createdAt       DateTime    @default(now())
+}
