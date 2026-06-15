@@ -6,10 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import styles from './wizard.module.css';
 
 export default function NewEvaluation() {
-  const { user, loading } = useAuth();
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
   
   const [step, setStep] = useState(1);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
@@ -31,13 +34,20 @@ export default function NewEvaluation() {
   const [kbModels, setKbModels] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('/api/kb?category=BRAND').then(r => r.json()).then(data => {
+    fetchWithAuth('/api/kb?category=BRAND').then(r => r.json()).then(data => {
       if (Array.isArray(data)) setKbBrands(data);
     });
-    fetch('/api/kb?category=MODEL').then(r => r.json()).then(data => {
+  }, []);
+
+  useEffect(() => {
+    let url = '/api/kb?category=MODEL';
+    if (formData.brand) {
+      url += `&context=${encodeURIComponent(formData.brand)}`;
+    }
+    fetch(url).then(r => r.json()).then(data => {
       if (Array.isArray(data)) setKbModels(data);
     });
-  }, []);
+  }, [formData.brand]);
 
   if (loading) return <div>Carregando...</div>;
   if (!user) {
@@ -55,12 +65,25 @@ export default function NewEvaluation() {
     }
   };
 
+  const addImageUrl = () => {
+    if (currentUrl.trim() && currentUrl.startsWith('http')) {
+      setImageUrls([...imageUrls, currentUrl.trim()]);
+      setCurrentUrl('');
+    }
+  };
+
+  const removeImageUrl = (index: number) => {
+    setImageUrls(imageUrls.filter((_, i) => i !== index));
+  };
+
   const submitEvaluation = async () => {
+    setIsSubmitting(true);
+
     try {
-      const res = await fetch('/api/evaluations', {
+      const res = await fetchWithAuth('/api/evaluations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: user.uid })
+        body: JSON.stringify({ ...formData, userId: user.uid, images: imageUrls })
       });
       if (res.ok) {
         const data = await res.json();
@@ -68,13 +91,15 @@ export default function NewEvaluation() {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className={styles.container}>
       <div className={styles.wizardCard}>
-        <div className={styles.progress}>Etapa {step} de 5</div>
+        <div className={styles.progress}>Etapa {step} de 6</div>
         
         {step === 1 && (
           <div className={styles.stepContent}>
@@ -143,10 +168,44 @@ export default function NewEvaluation() {
           </div>
         )}
 
+        {step === 6 && (
+          <div className={styles.stepContent}>
+            <h2>6. Fotos do Veículo</h2>
+            <p className={styles.note}>Adicione links diretos para as fotos do veículo (ex: Imgur, Discord, etc).</p>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input 
+                type="url" 
+                placeholder="https://exemplo.com/imagem.jpg"
+                value={currentUrl}
+                onChange={e => setCurrentUrl(e.target.value)}
+                className={styles.input} 
+                style={{ flex: 1, margin: 0 }}
+              />
+              <button onClick={addImageUrl} className={styles.btnSecondary} style={{ padding: '0 1rem' }} type="button">
+                Adicionar Link
+              </button>
+            </div>
+
+            {imageUrls.length > 0 && (
+              <ul style={{ listStyleType: 'none', padding: 0, marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {imageUrls.map((url, i) => (
+                  <li key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f1f5f9', padding: '0.5rem 1rem', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }} title={url}>{url}</span>
+                    <button onClick={() => removeImageUrl(i)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }} type="button">X</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div className={styles.actions}>
-          {step > 1 && <button onClick={() => setStep(s => s - 1)} className={styles.btnSecondary}>Voltar</button>}
-          {step < 5 && <button onClick={() => setStep(s => s + 1)} className={styles.btnPrimary}>Próximo</button>}
-          {step === 5 && <button onClick={submitEvaluation} className={styles.btnSuccess}>Gerar Score</button>}
+          {step > 1 && <button onClick={() => setStep(s => s - 1)} className={styles.btnSecondary} disabled={isSubmitting}>Voltar</button>}
+          {step < 6 && <button onClick={() => setStep(s => s + 1)} className={styles.btnPrimary}>Próximo</button>}
+          {step === 6 && <button onClick={submitEvaluation} className={styles.btnSuccess} disabled={isSubmitting}>
+            {isSubmitting ? 'Processando...' : 'Gerar Score'}
+          </button>}
         </div>
       </div>
     </div>

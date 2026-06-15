@@ -1,15 +1,18 @@
 'use client';
+import { useAuth } from "@/contexts/AuthContext";
 
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import styles from './Header.module.css';
 
 export default function Header() {
+  const { fetchWithAuth } = useAuth();
+
   const [search, setSearch] = useState('');
   const [stats, setStats] = useState({ activeOps: 0, avgRoi: 0 });
 
   useEffect(() => {
-    fetch('/api/stats')
+    fetchWithAuth('/api/stats')
       .then(res => res.json())
       .then(data => {
         if (data && typeof data.activeOps !== 'undefined') {

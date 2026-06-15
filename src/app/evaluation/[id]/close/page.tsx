@@ -1,10 +1,13 @@
 'use client';
+import { useAuth } from "@/contexts/AuthContext";
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import styles from '../../new/wizard.module.css'; // Reusing wizard styles
 
 export default function CloseCase() {
+  const { fetchWithAuth } = useAuth();
+
   const params = useParams();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -15,14 +18,14 @@ export default function CloseCase() {
   });
 
   useEffect(() => {
-    fetch(`/api/evaluations/${params.id}`)
+    fetchWithAuth(`/api/evaluations/${params.id}`)
       .then(res => res.json())
       .then(setData);
   }, [params.id]);
 
   const submitClose = async () => {
     try {
-      const res = await fetch(`/api/evaluations/${params.id}/close`, {
+      const res = await fetchWithAuth(`/api/evaluations/${params.id}/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

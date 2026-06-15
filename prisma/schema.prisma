@@ -7,25 +7,25 @@ datasource db {
 }
 
 model User {
-  id            String       @id @default(uuid())
-  firebaseUid   String       @unique
-  name          String
-  email         String       @unique
-  evaluations   Evaluation[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id          String       @id @default(uuid())
+  firebaseUid String       @unique
+  name        String
+  email       String       @unique
+  evaluations Evaluation[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Vehicle {
-  id            String       @id @default(uuid())
-  brand         String
-  model         String
-  year          Int
-  vin           String?      // Opcional
-  city          String?      // Opcional (Nova versão UI premium)
-  evaluations   Evaluation[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id          String       @id @default(uuid())
+  brand       String
+  model       String
+  year        Int
+  vin         String? // Opcional
+  city        String? // Opcional (Nova versão UI premium)
+  evaluations Evaluation[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 enum EvaluationStatus {
@@ -37,42 +37,43 @@ enum EvaluationStatus {
 }
 
 model Evaluation {
-  id                String           @id @default(uuid())
-  userId            String
-  user              User             @relation(fields: [userId], references: [id])
-  vehicleId         String
-  vehicle           Vehicle          @relation(fields: [vehicleId], references: [id])
-  
-  status            EvaluationStatus @default(DRAFT)
-  
-  // Modulo 1: Cadastro base
-  origin            String?
-  askingPrice       Float?
-  adLink            String?
-  
-  // Modulo 2: Mercado
-  fipePrice         Float?
-  estimatedSalePrice Float?
-  
-  // Módulos 3, 4, 5 (JSONB)
-  documentation     Json?
-  structure         Json?
-  mechanics         Json?
-  
-  // Resultados Calculados
-  totalInvestment   Float?
-  estimatedProfit   Float?
-  estimatedRoi      Float?
-  attractivenessScore Float?
-  riskScore         Float?
-  predictionConfidence Float?
-  recommendation    String?
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  
-  closedCase        ClosedCase?
-  expenses          Expense[]
+  status EvaluationStatus @default(DRAFT)
+
+  // Modulo 1: Cadastro base
+  origin      String?
+  askingPrice Float?
+  adLink      String?
+
+  // Modulo 2: Mercado
+  fipePrice          Float?
+  estimatedSalePrice Float?
+
+  // Módulos 3, 4, 5 (JSONB)
+  documentation Json?
+  structure     Json?
+  mechanics     Json?
+
+  // Resultados Calculados
+  totalInvestment      Float?
+  estimatedProfit      Float?
+  estimatedRoi         Float?
+  attractivenessScore  Float?
+  riskScore            Float?
+  predictionConfidence Float?
+  recommendation       String?
+  images               String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  closedCase ClosedCase?
+  expenses   Expense[]
 }
 
 model Expense {
@@ -85,29 +86,30 @@ model Expense {
 }
 
 model ClosedCase {
-  id              String      @id @default(uuid())
-  evaluationId    String      @unique
-  evaluation      Evaluation  @relation(fields: [evaluationId], references: [id])
-  
+  id           String     @id @default(uuid())
+  evaluationId String     @unique
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+
   actualSalePrice Float
   actualCosts     Float
   actualProfit    Float
   actualRoi       Float
-  
+
   preparationNotes String?
-  
-  createdAt       DateTime    @default(now())
+
+  createdAt DateTime @default(now())
 }
 
 model KnowledgeBaseItem {
-  id          String   @id @default(uuid())
-  category    String   // Ex: 'BRAND', 'MODEL', 'EXPENSE_TYPE'
-  value       String   // O texto padronizado
-  usageCount  Int      @default(1) // Frequência de uso para ordenar autocomplete
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@unique([category, value]) // Para evitar duplicatas exatas na mesma categoria
+  id         String   @id @default(uuid())
+  category   String // Ex: 'BRAND', 'MODEL', 'EXPENSE_TYPE'
+  value      String // O texto padronizado
+  context    String? // Ex: Para MODEL, armazena a BRAND (ex: 'Vw')
+  usageCount Int      @default(1) // Frequência de uso para ordenar autocomplete
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([category, value, context]) // Para evitar duplicatas exatas na mesma categoria e contexto
 }
 
 model StatisticalMetrics {
@@ -117,4 +119,3 @@ model StatisticalMetrics {
   stdDevRoi        Float    @default(0)
   lastCalculatedAt DateTime @default(now())
 }
-

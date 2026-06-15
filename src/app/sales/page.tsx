@@ -8,7 +8,7 @@ import { CheckCircle, TrendingUp, DollarSign } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function SalesReport() {
-  const { user, loading } = useAuth();
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
   const [sales, setSales] = useState<any[]>([]);
 
@@ -17,7 +17,7 @@ export default function SalesReport() {
       router.push('/login');
     } else if (user) {
       // Fetch only closed cases/sales
-      fetch('/api/evaluations')
+      fetchWithAuth('/api/evaluations')
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const authResult = await verifyAuth(req);
+    if (authResult.error) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
     const data = await req.json();
     
     // Motor Financeiro v1
@@ -30,14 +36,15 @@ export async function POST(req: Request) {
     if (attractivenessScore > 60 && riskScore < 40) recommendation = 'COMPRAR';
     if (riskScore >= 50) recommendation = 'ALTO RISCO - NÃO COMPRAR';
     if (estimatedRoi < 10) recommendation = 'NÃO COMPRAR (BAIXA MARGEM)';
-    
-    // Get or create user
-    let dbUser = await prisma.user.findUnique({ where: { firebaseUid: data.userId } });
+    const { searchParams } = new URL(req.url);
+    const userId: string = searchParams.get('userId') || (authResult.uid as string) || 'anonymous';
+
+    let dbUser = await prisma.user.findUnique({ where: { firebaseUid: userId } });
     if (!dbUser) {
       dbUser = await prisma.user.create({
         data: {
-          firebaseUid: data.userId,
-          email: `${data.userId}@cfi.com`,
+          firebaseUid: userId,
+          email: `${userId}@cfi.com`,
           name: 'Operador',
         }
       });
@@ -53,21 +60,25 @@ export async function POST(req: Request) {
     });
 
     // Auto-adicionar à Base de Conhecimento
-    const updateKb = async (category: string, val: string) => {
+    const updateKb = async (category: string, val: string, ctx?: string) => {
       const trimmed = val?.trim();
       if (!trimmed) return;
+
+      const whereClause: any = { category, value: { equals: trimmed, mode: 'insensitive' } };
+      if (ctx) whereClause.context = ctx;
+
       const existing = await prisma.knowledgeBaseItem.findFirst({
-        where: { category, value: { equals: trimmed, mode: 'insensitive' } }
+        where: whereClause
       });
       if (existing) {
         await prisma.knowledgeBaseItem.update({ where: { id: existing.id }, data: { usageCount: existing.usageCount + 1 } });
       } else {
-        await prisma.knowledgeBaseItem.create({ data: { category, value: trimmed, usageCount: 1 } });
+        await prisma.knowledgeBaseItem.create({ data: { category, value: trimmed, context: ctx || null, usageCount: 1 } });
       }
     };
 
     if (data.brand && data.brand !== 'Desconhecida') await updateKb('BRAND', data.brand);
-    if (data.model && data.model !== 'Desconhecido') await updateKb('MODEL', data.model);
+    if (data.model && data.model !== 'Desconhecido') await updateKb('MODEL', data.model, data.brand);
 
     const evalRecord = await prisma.evaluation.create({
       data: {
@@ -85,6 +96,7 @@ export async function POST(req: Request) {
         attractivenessScore,
         predictionConfidence: 65, // Fixo para o MVP
         recommendation,
+        images: data.images || [],
         documentation: { leilao: data.docLeilao, sinistro: data.docSinistro, restricao: data.docRestricao },
         structure: { ok: data.estruturaOk },
         mechanics: { ok: data.mecanicaOk },
@@ -99,8 +111,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const authResult = await verifyAuth(req);
+    if (authResult.error) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
     const evaluations = await prisma.evaluation.findMany({
       include: { vehicle: true, closedCase: true },
       orderBy: { createdAt: 'desc' }

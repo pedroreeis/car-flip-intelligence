@@ -1,13 +1,18 @@
 'use client';
+import { useAuth } from "@/contexts/AuthContext";
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PlusCircle, CheckCircle, Car, DollarSign, TrendingUp, AlertCircle, FileText, Copy } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
+import { PrintableReport } from '@/components/PrintableReport';
+import { PlusCircle, CheckCircle, Car, DollarSign, TrendingUp, AlertCircle, FileText, Copy, Printer } from 'lucide-react';
 import styles from '@/app/evaluation/new/wizard.module.css';
 import pageStyles from '@/app/page.module.css';
 
 export default function InventoryManagement({ params }: { params: Promise<{ id: string }> }) {
+  const { fetchWithAuth } = useAuth();
+
   const resolvedParams = use(params);
   const router = useRouter();
   const [data, setData] = useState<any>(null);
@@ -20,20 +25,26 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
   const [adCopy, setAdCopy] = useState('');
   const [generatingAd, setGeneratingAd] = useState(false);
 
+  const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Laudo_CFI_${data?.vehicle?.brand}_${data?.vehicle?.model}`,
+  });
+
   const fetchExpenses = async () => {
-    const res = await fetch(`/api/evaluations/${resolvedParams.id}/expenses`);
+    const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/expenses`);
     const json = await res.json();
     setExpenses(json);
   };
 
   const fetchKb = async () => {
-    const res = await fetch('/api/kb?category=EXPENSE_TYPE');
+    const res = await fetchWithAuth('/api/kb?category=EXPENSE_TYPE');
     const json = await res.json();
     if (Array.isArray(json)) setKbExpenses(json);
   };
 
   useEffect(() => {
-    fetch(`/api/evaluations/${resolvedParams.id}`)
+    fetchWithAuth(`/api/evaluations/${resolvedParams.id}`)
       .then(res => res.json())
       .then(setData);
     
@@ -44,7 +55,7 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
   const addExpense = async () => {
     if (!newExpense.description || !newExpense.amount) return;
     try {
-      await fetch(`/api/evaluations/${resolvedParams.id}/expenses`, {
+      await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newExpense)
@@ -59,7 +70,7 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
   const submitClose = async () => {
     if (!actualSalePrice) return alert('Informe o preço de venda');
     try {
-      const res = await fetch(`/api/evaluations/${resolvedParams.id}/close`, {
+      const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actualSalePrice })
@@ -77,7 +88,7 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
   const generateAdCopy = async () => {
     setGeneratingAd(true);
     try {
-      const res = await fetch(`/api/evaluations/${resolvedParams.id}/ad-copy`);
+      const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/ad-copy`);
       const data = await res.json();
       if (data.copy) {
         setAdCopy(data.copy);
@@ -95,10 +106,19 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
 
   return (
     <div className={styles.container}>
+      <div style={{ display: 'none' }}>
+        <PrintableReport ref={printRef} data={data} />
+      </div>
+
       <div className={styles.wizardCard}>
-        <div className={styles.header}>
-           <h2><Car size={24}/> {data.vehicle?.brand} {data.vehicle?.model}</h2>
-           <p>Gestão de Estoque e Preparação</p>
+        <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+           <div>
+             <h2><Car size={24}/> {data.vehicle?.brand} {data.vehicle?.model}</h2>
+             <p>Gestão de Estoque e Preparação</p>
+           </div>
+           <button onClick={() => handlePrint()} className={styles.btnSecondary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+             <Printer size={18} /> Exportar Laudo (PDF)
+           </button>
         </div>
 
         <div className={styles.stepContent}>
@@ -127,6 +147,22 @@ export default function InventoryManagement({ params }: { params: Promise<{ id: 
               <div className={pageStyles.kpiValue} style={{ color: '#fff' }}>R$ {totalCost.toLocaleString()}</div>
             </div>
           </div>
+
+          {data.images && data.images.length > 0 && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ margin: '0 0 1rem 0' }}>Fotos do Veículo</h3>
+              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+                {data.images.map((url: string, index: number) => (
+                  <img 
+                    key={index} 
+                    src={url} 
+                    alt={`Foto ${index + 1}`} 
+                    style={{ width: '200px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)' }} 
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           
           <h3 style={{ margin: '0 0 1rem 0' }}>Histórico de Preparação</h3>
           

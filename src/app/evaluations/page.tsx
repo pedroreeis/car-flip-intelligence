@@ -8,7 +8,7 @@ import { Car, MapPin } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function EvaluationsList() {
-  const { user, loading } = useAuth();
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
   const [evaluations, setEvaluations] = useState<any[]>([]);
 
@@ -16,7 +16,7 @@ export default function EvaluationsList() {
     if (!loading && !user) {
       router.push('/login');
     } else if (user) {
-      fetch('/api/evaluations')
+      fetchWithAuth('/api/evaluations')
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {

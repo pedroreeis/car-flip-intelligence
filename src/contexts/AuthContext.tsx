@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signIn: async () => {},
   signOut: async () => {},
+  fetchWithAuth: async () => new Response(null, { status: 401 }),
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -54,8 +56,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await firebaseSignOut(auth);
   };
 
+  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return fetch(url, options);
+    
+    const token = await currentUser.getIdToken();
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+    return fetch(url, { ...options, headers });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, fetchWithAuth }}>
       {children}
     </AuthContext.Provider>
   );

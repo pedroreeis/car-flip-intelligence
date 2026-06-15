@@ -1,4 +1,5 @@
 'use client';
+import { useAuth } from "@/contexts/AuthContext";
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -6,13 +7,15 @@ import { Database, Plus, Trash2 } from 'lucide-react';
 import styles from '@/app/evaluation/new/wizard.module.css';
 
 export default function KnowledgeBaseManagement() {
+  const { fetchWithAuth } = useAuth();
+
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newItem, setNewItem] = useState({ category: 'BRAND', value: '' });
+  const [newItem, setNewItem] = useState({ category: 'BRAND', value: '', context: '' });
 
   const fetchItems = async () => {
     setLoading(true);
-    const res = await fetch('/api/kb');
+    const res = await fetchWithAuth('/api/kb');
     const data = await res.json();
     setItems(Array.isArray(data) ? data : []);
     setLoading(false);
@@ -24,18 +27,18 @@ export default function KnowledgeBaseManagement() {
 
   const handleAdd = async () => {
     if (!newItem.value) return;
-    await fetch('/api/kb', {
+    await fetchWithAuth('/api/kb', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newItem)
     });
-    setNewItem({ ...newItem, value: '' });
+    setNewItem({ ...newItem, value: '', context: '' });
     fetchItems();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este termo?')) return;
-    await fetch(`/api/kb?id=${id}`, { method: 'DELETE' });
+    await fetchWithAuth(`/api/kb?id=${id}`, { method: 'DELETE' });
     fetchItems();
   };
 
@@ -77,6 +80,18 @@ export default function KnowledgeBaseManagement() {
                 onChange={e => setNewItem({...newItem, value: e.target.value})}
               />
             </div>
+            {newItem.category === 'MODEL' && (
+              <div style={{ flex: 1 }}>
+                <label>Contexto (Marca)</label>
+                <input 
+                  type="text" 
+                  className={styles.input} 
+                  placeholder="Ex: Volkswagen"
+                  value={newItem.context}
+                  onChange={e => setNewItem({...newItem, context: e.target.value})}
+                />
+              </div>
+            )}
             <button onClick={handleAdd} className={styles.btnPrimary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '42px' }}>
               <Plus size={18} /> Adicionar
             </button>
@@ -89,6 +104,7 @@ export default function KnowledgeBaseManagement() {
               <thead style={{ background: '#f1f5f9' }}>
                 <tr>
                   <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Categoria</th>
+                  <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Contexto</th>
                   <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Termo Padronizado</th>
                   <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Uso</th>
                   <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', width: '80px' }}>Ações</th>
@@ -105,6 +121,7 @@ export default function KnowledgeBaseManagement() {
                 {items.map(item => (
                   <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: '#64748b' }}>{item.category}</td>
+                    <td style={{ padding: '0.75rem 1rem', color: '#94a3b8' }}>{item.context || '-'}</td>
                     <td style={{ padding: '0.75rem 1rem' }}>{item.value}</td>
                     <td style={{ padding: '0.75rem 1rem' }}>{item.usageCount}x</td>
                     <td style={{ padding: '0.75rem 1rem' }}>

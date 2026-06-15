@@ -8,7 +8,7 @@ import { TrendingUp, Car, CheckCircle, BarChart3, TrendingDown, MapPin, ChevronR
 import styles from './page.module.css';
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
   const [evaluations, setEvaluations] = useState<any[]>([]);
 
@@ -16,7 +16,7 @@ export default function Dashboard() {
     if (!loading && !user) {
       router.push('/login');
     } else if (user) {
-      fetch('/api/evaluations')
+      fetchWithAuth('/api/evaluations')
         .then(res => res.json())
         .then(data => {
            if(Array.isArray(data)) setEvaluations(data);

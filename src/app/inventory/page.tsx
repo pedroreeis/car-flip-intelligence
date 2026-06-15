@@ -8,7 +8,7 @@ import { Car, Activity } from 'lucide-react';
 import styles from '../page.module.css'; // Reusing dashboard styles
 
 export default function Inventory() {
-  const { user, loading } = useAuth();
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
   const [stock, setStock] = useState<any[]>([]);
 
@@ -16,7 +16,7 @@ export default function Inventory() {
     if (!loading && !user) {
       router.push('/login');
     } else if (user) {
-      fetch('/api/evaluations')
+      fetchWithAuth('/api/evaluations')
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
