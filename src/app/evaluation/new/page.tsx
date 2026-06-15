@@ -13,6 +13,7 @@ export default function NewEvaluation() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [currentUrl, setCurrentUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
@@ -30,24 +31,59 @@ export default function NewEvaluation() {
     mecanicaOk: true,
   });
 
-  const [kbBrands, setKbBrands] = useState<any[]>([]);
-  const [kbModels, setKbModels] = useState<any[]>([]);
+  // FIPE States
+  const [fipeBrands, setFipeBrands] = useState<any[]>([]);
+  const [fipeModels, setFipeModels] = useState<any[]>([]);
+  const [fipeYears, setFipeYears] = useState<any[]>([]);
+  
+  const [selectedBrandCode, setSelectedBrandCode] = useState('');
+  const [selectedModelCode, setSelectedModelCode] = useState('');
+  const [selectedYearCode, setSelectedYearCode] = useState('');
+  const [isLoadingFipe, setIsLoadingFipe] = useState(false);
 
   useEffect(() => {
-    fetchWithAuth('/api/kb?category=BRAND').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setKbBrands(data);
+    fetchWithAuth('/api/fipe/brands').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setFipeBrands(data);
     });
   }, []);
 
   useEffect(() => {
-    let url = '/api/kb?category=MODEL';
-    if (formData.brand) {
-      url += `&context=${encodeURIComponent(formData.brand)}`;
+    if (selectedBrandCode) {
+      setFipeModels([]);
+      setFipeYears([]);
+      setSelectedModelCode('');
+      setSelectedYearCode('');
+      fetchWithAuth(`/api/fipe/models?brandCode=${selectedBrandCode}`).then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setFipeModels(data);
+      });
     }
-    fetchWithAuth(url).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setKbModels(data);
-    });
-  }, [formData.brand]);
+  }, [selectedBrandCode]);
+
+  useEffect(() => {
+    if (selectedBrandCode && selectedModelCode) {
+      setFipeYears([]);
+      setSelectedYearCode('');
+      fetchWithAuth(`/api/fipe/years?brandCode=${selectedBrandCode}&modelCode=${selectedModelCode}`).then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setFipeYears(data);
+      });
+    }
+  }, [selectedModelCode]);
+
+  useEffect(() => {
+    if (selectedBrandCode && selectedModelCode && selectedYearCode) {
+      setIsLoadingFipe(true);
+      fetchWithAuth(`/api/fipe/price?brandCode=${selectedBrandCode}&modelCode=${selectedModelCode}&yearCode=${selectedYearCode}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.price) {
+            // price comes like "R$ 10.816,00"
+            const numericPrice = parseFloat(data.price.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+            setFormData(prev => ({ ...prev, fipePrice: numericPrice.toString() }));
+          }
+        })
+        .finally(() => setIsLoadingFipe(false));
+    }
+  }, [selectedYearCode]);
 
   if (loading) return <div>Carregando...</div>;
   if (!user) {
@@ -63,6 +99,28 @@ export default function NewEvaluation() {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = fipeBrands.find(b => b.code === code)?.name || '';
+    setSelectedBrandCode(code);
+    setFormData(prev => ({ ...prev, brand: name, model: '', year: '' }));
+  };
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = fipeModels.find(m => m.code === code)?.name || '';
+    setSelectedModelCode(code);
+    setFormData(prev => ({ ...prev, model: name, year: '' }));
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = fipeYears.find(y => y.code === code)?.name || '';
+    setSelectedYearCode(code);
+    // Extrai o ano do código (ex: "1992-1" -> "1992") ou envia o código direto, o backend usa parseInt
+    setFormData(prev => ({ ...prev, year: code }));
   };
 
   const addImageUrl = () => {
@@ -104,19 +162,28 @@ export default function NewEvaluation() {
         {step === 1 && (
           <div className={styles.stepContent}>
             <h2>1. Cadastro do Veículo</h2>
-            <input name="brand" list="kb-brands" placeholder="Marca" value={formData.brand} onChange={handleChange} className={styles.input} />
-            <datalist id="kb-brands">
-              {kbBrands.map(b => <option key={b.id} value={b.value} />)}
-            </datalist>
-            <input name="model" list="kb-models" placeholder="Modelo" value={formData.model} onChange={handleChange} className={styles.input} />
-            <datalist id="kb-models">
-              {kbModels.map(m => <option key={m.id} value={m.value} />)}
-            </datalist>
-            <input name="year" type="number" placeholder="Ano" value={formData.year} onChange={handleChange} className={styles.input} />
+            
+            <select name="brandCode" value={selectedBrandCode} onChange={handleBrandChange} className={styles.input}>
+              <option value="">Selecione a Marca...</option>
+              {fipeBrands.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
+            </select>
+
+            <select name="modelCode" value={selectedModelCode} onChange={handleModelChange} className={styles.input} disabled={!selectedBrandCode}>
+              <option value="">Selecione o Modelo...</option>
+              {fipeModels.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
+            </select>
+
+            <select name="yearCode" value={selectedYearCode} onChange={handleYearChange} className={styles.input} disabled={!selectedModelCode}>
+              <option value="">Selecione o Ano/Combustível...</option>
+              {fipeYears.map(y => <option key={y.code} value={y.code}>{y.name}</option>)}
+            </select>
+
             <input name="vin" placeholder="VIN / Chassi (Opcional)" value={formData.vin} onChange={handleChange} className={styles.input} />
             <input name="askingPrice" type="number" placeholder="Preço Pedido (R$)" value={formData.askingPrice} onChange={handleChange} className={styles.input} />
             <input name="origin" placeholder="Origem (Ex: Particular, OLX)" value={formData.origin} onChange={handleChange} className={styles.input} />
             <input name="adLink" placeholder="Link do Anúncio (Opcional)" value={formData.adLink} onChange={handleChange} className={styles.input} />
+            
+            {isLoadingFipe && <p className={styles.note} style={{color: '#10b981'}}>Consultando preço FIPE oficial...</p>}
           </div>
         )}
 
@@ -124,6 +191,7 @@ export default function NewEvaluation() {
           <div className={styles.stepContent}>
             <h2>2. Avaliação de Mercado</h2>
             <input name="fipePrice" type="number" placeholder="Preço FIPE (R$)" value={formData.fipePrice} onChange={handleChange} className={styles.input} />
+            <p className={styles.note}>O Preço Fipe é preenchido automaticamente, mas pode ser ajustado manualmente se necessário.</p>
             <input name="estimatedSalePrice" type="number" placeholder="Preço de Venda Estimado (R$)" value={formData.estimatedSalePrice} onChange={handleChange} className={styles.input} />
           </div>
         )}
