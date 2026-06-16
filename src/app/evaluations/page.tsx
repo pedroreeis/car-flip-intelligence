@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Car, MapPin } from 'lucide-react';
+import { Car, MapPin, Trash2 } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function EvaluationsList() {
@@ -28,6 +28,20 @@ export default function EvaluationsList() {
   }, [user, loading, router]);
 
   if (loading || !user) return <div className={styles.loading}>Carregando Avaliações...</div>;
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir esta avaliação?')) {
+      try {
+        const res = await fetchWithAuth(`/api/evaluations/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setEvaluations(evaluations.filter(ev => ev.id !== id));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -54,10 +68,17 @@ export default function EvaluationsList() {
                 >
                   <div className={styles.oppImage}>
                     <img src="/placeholder.png" alt="Carro" />
-                    <div className={styles.oppBadges}>
+                    <div className={styles.oppBadges} style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                       <span className={`${styles.badge} ${styles.badgeNeutral}`}>
                         Em Avaliação
                       </span>
+                      <button 
+                        onClick={(e) => handleDelete(e, ev.id)} 
+                        style={{ background: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                        title="Excluir Avaliação"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                   <div className={styles.oppContent}>

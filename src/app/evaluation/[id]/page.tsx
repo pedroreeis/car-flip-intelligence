@@ -43,17 +43,17 @@ export default function EvaluationResult() {
     }
   };
 
-  const handleDiscard = async () => {
-    try {
-      const res = await fetchWithAuth(`/api/evaluations/${params.id}/reject`, { method: 'POST' });
-      if (res.ok) {
-        router.push('/');
-      } else {
-        alert('Erro ao descartar avaliação');
-      }
-    } catch (e) {
-      console.error(e);
+  const handleDelete = async () => {
+    if (confirm('Tem certeza que deseja excluir esta avaliação definitivamente?')) {
+      try {
+        const res = await fetchWithAuth(`/api/evaluations/${params.id}`, { method: 'DELETE' });
+        if (res.ok) router.push('/evaluations');
+      } catch (e) { console.error(e); }
     }
+  };
+
+  const handleSaveDraft = () => {
+    router.push('/evaluations');
   };
 
   return (
@@ -118,9 +118,12 @@ export default function EvaluationResult() {
           </div>
         )}
 
-        <div className={styles.actions}>
-          <button onClick={handleDiscard} className={styles.btnSecondary} style={{ cursor: 'pointer' }}>Descartar Avaliação</button>
-          <button onClick={handleAddToStock} className={styles.btnPrimary}>Adicionar ao Estoque</button>
+        <div className={styles.actions} style={{ flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+            <button onClick={handleSaveDraft} className={styles.btnSecondary} style={{ flex: 1, border: '1px solid var(--primary-color)' }}>Salvar / Em Negociação</button>
+            <button onClick={handleAddToStock} className={styles.btnPrimary} style={{ flex: 1 }}>Comprado! Mover p/ Estoque</button>
+          </div>
+          <button onClick={handleDelete} style={{ alignSelf: 'center', background: 'none', border: 'none', color: 'var(--text-muted)', textDecoration: 'underline', marginTop: '0.5rem', cursor: 'pointer' }}>Excluir Avaliação (Rascunho)</button>
         </div>
       </div>
     </div>

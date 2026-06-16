@@ -1,293 +1,274 @@
 'use client';
-import { useAuth } from "@/contexts/AuthContext";
 
-import { useState, useEffect, use, useRef } from 'react';
+import { useEffect, useState, use } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useReactToPrint } from 'react-to-print';
-import { PrintableReport } from '@/components/PrintableReport';
-import { PlusCircle, CheckCircle, Car, DollarSign, TrendingUp, AlertCircle, FileText, Copy, Printer } from 'lucide-react';
-import styles from '@/app/evaluation/new/wizard.module.css';
-import pageStyles from '@/app/page.module.css';
+import { Car, DollarSign, CheckCircle, Plus } from 'lucide-react';
+import styles from '../../page.module.css';
 
-export default function InventoryManagement({ params }: { params: Promise<{ id: string }> }) {
-  const { fetchWithAuth } = useAuth();
-
-  const resolvedParams = use(params);
+export default function InventoryDetail({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
+  
+  const { user, loading, fetchWithAuth } = useAuth();
   const router = useRouter();
-  const [data, setData] = useState<any>(null);
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [kbExpenses, setKbExpenses] = useState<any[]>([]);
-  
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '' });
+  const [evaluation, setEvaluation] = useState<any>(null);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskCost, setNewTaskCost] = useState('');
+
+  // Sale Modal State
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [actualSalePrice, setActualSalePrice] = useState('');
-  
-  const [adCopy, setAdCopy] = useState('');
-  const [generatingAd, setGeneratingAd] = useState(false);
-
-  const printRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Laudo_CFI_${data?.vehicle?.brand}_${data?.vehicle?.model}`,
-  });
-
-  const fetchExpenses = async () => {
-    const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/expenses`);
-    const json = await res.json();
-    setExpenses(json);
-  };
-
-  const fetchKb = async () => {
-    const res = await fetchWithAuth('/api/kb?category=EXPENSE_TYPE');
-    const json = await res.json();
-    if (Array.isArray(json)) setKbExpenses(json);
-  };
+  const [actualCosts, setActualCosts] = useState('');
+  const [isSelling, setIsSelling] = useState(false);
 
   useEffect(() => {
-    fetchWithAuth(`/api/evaluations/${resolvedParams.id}`)
-      .then(res => res.json())
-      .then(setData);
-    
-    fetchExpenses();
-    fetchKb();
-  }, [resolvedParams.id]);
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (user) {
+      fetchWithAuth(`/api/evaluations/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          setEvaluation(data);
+        });
+    }
+  }, [user, loading, id, router]);
 
-  const addExpense = async () => {
-    if (!newExpense.description || !newExpense.amount) return;
-    try {
-      await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/expenses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newExpense)
-      });
-      setNewExpense({ description: '', amount: '' });
-      fetchExpenses();
-    } catch (err) {
-      console.error(err);
+  if (loading || !user || !evaluation) return <div className={styles.loading}>Carregando Detalhes...</div>;
+
+  const handleStageChange = async (newStage: string) => {
+    setEvaluation({ ...evaluation, inventoryStage: newStage });
+    await fetchWithAuth(`/api/evaluations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inventoryStage: newStage })
+    });
+  };
+
+  const handleToggleTask = async (taskId: string, currentStatus: boolean) => {
+    const updatedTasks = evaluation.tasks.map((t: any) => 
+      t.id === taskId ? { ...t, isCompleted: !currentStatus } : t
+    );
+    setEvaluation({ ...evaluation, tasks: updatedTasks });
+    
+    await fetchWithAuth(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isCompleted: !currentStatus })
+    });
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskTitle) return;
+    
+    setIsAddingTask(false);
+    
+    const res = await fetchWithAuth(`/api/evaluations/${id}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTaskTitle, costEstimate: newTaskCost })
+    });
+    
+    if (res.ok) {
+      const addedTask = await res.json();
+      setEvaluation({ ...evaluation, tasks: [...evaluation.tasks, addedTask] });
+      setNewTaskTitle('');
+      setNewTaskCost('');
     }
   };
 
-  const submitClose = async () => {
-    if (!actualSalePrice) return alert('Informe o preço de venda');
+  const handleGenerateAd = () => {
+    const text = `Vende-se ${evaluation.vehicle?.brand} ${evaluation.vehicle?.model} ${evaluation.vehicle?.year}\n\n` +
+      `Excelente estado de conservação.\n` +
+      `Valor: R$ ${evaluation.estimatedSalePrice?.toLocaleString('pt-BR')}\n\n` +
+      `Entre em contato para mais detalhes!`;
+    navigator.clipboard.writeText(text);
+    alert('Texto do anúncio copiado para a área de transferência!');
+  };
+
+  const handleSell = async () => {
+    setIsSelling(true);
     try {
-      const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/close`, {
+      const res = await fetchWithAuth(`/api/evaluations/${id}/sell`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actualSalePrice })
+        body: JSON.stringify({
+          actualSalePrice: parseFloat(actualSalePrice) || 0,
+          actualCosts: parseFloat(actualCosts) || 0,
+        })
       });
       if (res.ok) {
+        alert('Venda registrada com sucesso! Parabéns pelo negócio.');
         router.push('/');
       } else {
-        alert('Erro ao registrar venda');
+        alert('Erro ao registrar venda.');
       }
-    } catch (err) {
-      console.error(err);
+    } finally {
+      setIsSelling(false);
     }
   };
 
-  const generateAdCopy = async () => {
-    setGeneratingAd(true);
-    try {
-      const res = await fetchWithAuth(`/api/evaluations/${resolvedParams.id}/ad-copy`);
-      const data = await res.json();
-      if (data.copy) {
-        setAdCopy(data.copy);
-      }
-    } catch (error) {
-      console.error('Error generating ad copy', error);
-    }
-    setGeneratingAd(false);
-  };
-
-  if (!data) return <div style={{ color: '#fff', padding: '2rem' }}>Carregando dados do veículo...</div>;
-
-  const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalCost = (data.askingPrice || 0) + totalExpenses;
+  const STAGES = ['PURCHASED', 'IN_REPAIR', 'IN_DETAILING', 'READY_FOR_SALE', 'ADVERTISED'];
 
   return (
     <div className={styles.container}>
-      <div style={{ display: 'none' }}>
-        <PrintableReport ref={printRef} data={data} />
+      <div className={styles.breadcrumb}>
+        <Link href="/inventory">Gestão de Estoque</Link> &gt; <span>{evaluation.vehicle?.model}</span>
       </div>
 
-      <div className={styles.wizardCard}>
-        <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-           <div>
-             <h2><Car size={24}/> {data.vehicle?.brand} {data.vehicle?.model}</h2>
-             <p>Gestão de Estoque e Preparação</p>
-           </div>
-           <button onClick={() => handlePrint()} className={styles.btnSecondary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-             <Printer size={18} /> Exportar Laudo (PDF)
-           </button>
+      <div className={styles.heroHeader}>
+        <div className={styles.heroContent}>
+          <h1>{evaluation.vehicle?.brand} {evaluation.vehicle?.model} - {evaluation.vehicle?.year}</h1>
+          <p>Visão detalhada de preparação e custos operacionais.</p>
         </div>
+      </div>
 
-        <div className={styles.stepContent}>
-          <div className={pageStyles.kpiGrid} style={{ marginBottom: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-            <div className={pageStyles.kpiCard}>
-              <div className={pageStyles.kpiHeader}>
-                <span className={pageStyles.kpiTitle}>Custo de Aquisição</span>
-                <DollarSign size={18} color="var(--text-muted)" />
-              </div>
-              <div className={pageStyles.kpiValue}>R$ {(data.askingPrice || 0).toLocaleString()}</div>
-            </div>
-            
-            <div className={pageStyles.kpiCard}>
-              <div className={pageStyles.kpiHeader}>
-                <span className={pageStyles.kpiTitle}>Total em Preparação</span>
-                <AlertCircle size={18} color="#eab308" />
-              </div>
-              <div className={pageStyles.kpiValue} style={{ color: '#eab308' }}>R$ {totalExpenses.toLocaleString()}</div>
-            </div>
-
-            <div className={pageStyles.kpiCard} style={{ background: 'var(--primary-color)' }}>
-              <div className={pageStyles.kpiHeader}>
-                <span className={pageStyles.kpiTitle} style={{ color: '#fff' }}>Custo Total Acumulado</span>
-                <TrendingUp size={18} color="#fff" />
-              </div>
-              <div className={pageStyles.kpiValue} style={{ color: '#fff' }}>R$ {totalCost.toLocaleString()}</div>
-            </div>
-          </div>
-
-          {data.images && data.images.length > 0 && (
-            <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ margin: '0 0 1rem 0' }}>Fotos do Veículo</h3>
-              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
-                {data.images.map((url: string, index: number) => (
-                  <img 
-                    key={index} 
-                    src={url} 
-                    alt={`Foto ${index + 1}`} 
-                    style={{ width: '200px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)' }} 
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <h3 style={{ margin: '0 0 1rem 0' }}>Histórico de Preparação</h3>
-          
-          {/* Tabela de Despesas */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-             {expenses.length === 0 ? (
-                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma despesa registrada.</div>
-             ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead style={{ background: '#f1f5f9' }}>
-                    <tr>
-                      <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>Descrição</th>
-                      <th style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', width: '150px' }}>Valor (R$)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.map((exp, i) => (
-                      <tr key={i}>
-                        <td style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>{exp.description}</td>
-                        <td style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontWeight: 'bold' }}>{exp.amount.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-             )}
-          </div>
-
-          {/* Form Nova Despesa */}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '3rem' }}>
-            <div style={{ flex: 1 }}>
-              <label>Nova Despesa / Reparo</label>
-              <input 
-                type="text" 
-                list="kb-expenses"
-                className={styles.input} 
-                value={newExpense.description}
-                onChange={e => setNewExpense({...newExpense, description: e.target.value})}
-                placeholder="Ex: Polimento, Higienização, Troca de Óleo..."
-              />
-              <datalist id="kb-expenses">
-                {kbExpenses.map(kb => (
-                  <option key={kb.id} value={kb.value} />
-                ))}
-              </datalist>
-            </div>
-            <div style={{ width: '200px' }}>
-              <label>Custo (R$)</label>
-              <input 
-                type="number" 
-                className={styles.input} 
-                value={newExpense.amount}
-                onChange={e => setNewExpense({...newExpense, amount: e.target.value})}
-                placeholder="Valor"
-              />
-            </div>
-            <button onClick={addExpense} className={styles.btnSecondary} style={{ height: '42px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-               <PlusCircle size={18}/> Adicionar
+      <main className={styles.mainLayout} style={{ gridTemplateColumns: '2fr 1fr' }}>
+        <div className={styles.feedColumn}>
+          <div className={styles.sectionHeader}>
+            <h2>Tarefas de Preparação (Pipeline)</h2>
+            <button className={styles.heroButton} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={() => setIsAddingTask(!isAddingTask)}>
+              <Plus size={16} style={{ marginRight: '0.5rem' }}/> Nova Tarefa
             </button>
           </div>
+          
+          {isAddingTask && (
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <input type="text" placeholder="Descrição da tarefa" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} style={{ flex: 2, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+              <input type="number" placeholder="Custo (R$)" value={newTaskCost} onChange={e => setNewTaskCost(e.target.value)} style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+              <button onClick={handleAddTask} style={{ padding: '0.5rem 1rem', background: 'var(--success)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar</button>
+            </div>
+          )}
 
-          <hr style={{ border: 'none', borderTop: '1px dashed var(--border)', margin: '2rem 0' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+            {evaluation.tasks?.map((task: any) => (
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ color: task.isCompleted ? 'var(--success)' : 'var(--text-muted)', cursor: 'pointer' }} onClick={() => handleToggleTask(task.id, task.isCompleted)}>
+                    <CheckCircle size={24} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', color: task.isCompleted ? 'var(--text-muted)' : 'var(--text-color)', textDecoration: task.isCompleted ? 'line-through' : 'none' }}>{task.title}</h4>
+                  </div>
+                </div>
+                <div style={{ fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                  R$ {task.costEstimate?.toLocaleString()}
+                </div>
+              </div>
+            ))}
+            {!evaluation.tasks?.length && !isAddingTask && (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma tarefa cadastrada.</div>
+            )}
+          </div>
+        </div>
 
-          {/* Sessão de Marketing e Anúncios */}
-          <div style={{ background: '#f8fafc', border: '1px solid var(--border)', padding: '2rem', borderRadius: '12px', marginBottom: '2rem' }}>
-             <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>
-               <FileText size={24}/> Marketing & Anúncios
-             </h3>
-             <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-               Utilize os dados do laudo técnico (estrutura, mecânica e documentação) para gerar automaticamente um texto publicitário persuasivo (Copy) no padrão OLX / Webmotors.
-             </p>
-             
-             {!adCopy ? (
-               <button onClick={generateAdCopy} disabled={generatingAd} className={styles.btnPrimary} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                 {generatingAd ? 'Gerando Copy...' : 'Gerar Copy Profissional'}
-               </button>
-             ) : (
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                 <textarea 
-                   value={adCopy}
-                   onChange={(e) => setAdCopy(e.target.value)}
-                   style={{ width: '100%', height: '200px', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)', fontFamily: 'inherit', fontSize: '0.95rem', lineHeight: '1.5', resize: 'vertical' }}
-                 />
-                 <button 
-                   onClick={() => navigator.clipboard.writeText(adCopy)}
-                   className={styles.btnSecondary} 
-                   style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                 >
-                   <Copy size={16} /> Copiar para Área de Transferência
-                 </button>
-               </div>
-             )}
+        <div className={styles.sidebarColumn}>
+          <div className={styles.metricsPanel}>
+            <h3>Mudar Estágio (Kanban)</h3>
+            <select 
+              value={evaluation.inventoryStage || 'PURCHASED'} 
+              onChange={(e) => handleStageChange(e.target.value)}
+              style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', marginTop: '1rem', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)', border: '1px solid var(--border-color)' }}
+            >
+              <option value="PURCHASED">Comprado</option>
+              <option value="IN_REPAIR">Oficina / Reparo</option>
+              <option value="IN_DETAILING">Estética</option>
+              <option value="READY_FOR_SALE">Pronto p/ Venda</option>
+              <option value="ADVERTISED">Anunciado</option>
+            </select>
           </div>
 
-          {/* Sessão de Fechamento de Venda */}
-          <div style={{ background: '#f0fdf4', border: '1px solid #22c55e', padding: '2rem', borderRadius: '12px', marginTop: '2rem' }}>
-             <h3 style={{ margin: '0 0 1rem 0', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.4rem' }}>
-               <CheckCircle size={24}/> Registrar Venda Realizada
-             </h3>
-             <p style={{ fontSize: '0.95rem', color: '#14532d', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-               Parabéns! Registre o valor final da negociação. O sistema irá subtrair automaticamente o Custo de Aquisição (R$ {(data.askingPrice || 0).toLocaleString()}) e os Custos de Preparação (R$ {totalExpenses.toLocaleString()}) para contabilizar seu lucro líquido no Dashboard de Investimentos.
-             </p>
-             <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-               <div style={{ flex: 1, maxWidth: '400px' }}>
-                 <label style={{ color: '#166534', fontWeight: 'bold' }}>Valor de Fechamento da Venda (R$)</label>
-                 <input 
-                   type="number" 
-                   className={styles.input} 
-                   value={actualSalePrice}
-                   onChange={e => setActualSalePrice(e.target.value)}
-                   placeholder="Ex: 45000"
-                   style={{ fontSize: '1.2rem', padding: '1rem' }}
-                 />
-               </div>
-               <button onClick={submitClose} className={styles.btnSuccess} disabled={!actualSalePrice} style={{ height: '54px', padding: '0 2rem', fontSize: '1rem', fontWeight: 'bold' }}>
-                 Consolidar e Encerrar Caso
-               </button>
-             </div>
-          </div>
+          <div className={styles.metricsPanel} style={{ marginTop: '2rem' }}>
+            <h3>Resumo Financeiro</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Custo Inicial</span>
+                <strong>R$ {evaluation.askingPrice?.toLocaleString()}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Custo Prep. Previsto</span>
+                <strong>R$ {evaluation.tasks?.reduce((acc: number, t: any) => acc + (t.costEstimate||0), 0).toLocaleString() || 0}</strong>
+              </div>
+              <div style={{ borderTop: '1px solid var(--border-color)', margin: '0.5rem 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--primary-color)', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                <span>Venda Projetada</span>
+                <span>R$ {evaluation.estimatedSalePrice?.toLocaleString()}</span>
+              </div>
+            </div>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '2rem' }}>
+              <button 
+                onClick={handleGenerateAd}
+                style={{ width: '100%', padding: '1rem', background: 'var(--surface-color)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}
+              >
+                Copiar Texto do Anúncio
+              </button>
+              
+              <button 
+                onClick={() => {
+                  setActualSalePrice(evaluation.estimatedSalePrice?.toString() || '');
+                  setActualCosts(evaluation.tasks?.reduce((acc: number, t: any) => acc + (t.costEstimate||0), 0).toString() || '0');
+                  setIsSellModalOpen(true);
+                }}
+                style={{ width: '100%', padding: '1rem', background: 'var(--success)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)' }}
+              >
+                💰 Registrar Venda
+              </button>
+            </div>
+          </div>
         </div>
-        
-        <div className={styles.actions} style={{ marginTop: '2rem' }}>
-          <Link href="/inventory" className={styles.btnSecondary}>Voltar ao Estoque</Link>
+      </main>
+
+      {/* Sale Modal */}
+      {isSellModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '12px', width: '90%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ marginTop: 0, color: 'var(--text-color)' }}>Fechar Negócio</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Confirme os valores reais para fechar esta avaliação.</p>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-color)' }}>Valor Real de Venda (R$)</label>
+              <input 
+                type="number" 
+                value={actualSalePrice} 
+                onChange={(e) => setActualSalePrice(e.target.value)}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-color)' }}>Custos Extras / Preparação (R$)</label>
+              <input 
+                type="number" 
+                value={actualCosts} 
+                onChange={(e) => setActualCosts(e.target.value)}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>*Sugestão baseada nas tarefas acima.</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button 
+                onClick={() => setIsSellModalOpen(false)}
+                style={{ flex: 1, padding: '0.8rem', background: 'var(--surface-color)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: 'var(--text-color)' }}
+                disabled={isSelling}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSell}
+                style={{ flex: 1, padding: '0.8rem', background: 'var(--success)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#fff' }}
+                disabled={isSelling}
+              >
+                {isSelling ? 'Salvando...' : 'Confirmar Venda'}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

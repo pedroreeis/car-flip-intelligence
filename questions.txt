@@ -2,8 +2,7 @@ O aplicativo será web ou desktop?
 R: Web, com a escolha do web podemos garantir uma multi plataforma para ios, android e desktop. Fazendo um design responsivo e que encaixe em todos os tamanhos de tela. Futuramente, será bem mais fácil de vender o software.
 
 Vai precisar fazer o login?
-R: Não, o aplicativo será algo privado, onde a empresa que for utilizar hospeda sua versão e utiliza com seus próprios funcionários.
-(Análise do Arquiteto: Para atender ao requisito de "Auditoria (importante)" e acompanhar o desempenho de cada comprador (quem acha os melhores carros? quem comete mais erros na inspeção?), será necessário no mínimo um login leve ou seleção de operador. A premissa de não ter login prejudica o valor dos dados operacionais e de auditoria.)
+R: Sim por conta da auditoria.
 
 Como será a base de conhecimento?
 R: Será um banco de dados onde o app buscará as informações necessárias para realizar os cálculos, para maior acertividade, a base de conhecimento será compartilhada entre todas as instâncias do aplicativo, mas sempre primando pela privacidade das informações. Onde cada empresa terá sua base de conhecimento e poderão compartilhar entre si se assim desejarem, algo como o open finance.
@@ -34,12 +33,9 @@ R: 1. Avaliação.
 5. Aprendizado histórico.
 
 Qual pergunta o app deve responder com clareza?
-R: Responder à pergunta:
-
-"Vale a pena comprar este carro para revender?"
+R: Responder à pergunta: "Vale a pena comprar este carro para revender?"
 
 Produzindo:
-
 Score de atratividade
 Score de risco
 Lucro estimado
@@ -51,13 +47,17 @@ Valor máximo recomendado para compra
 Recomendação final
 
 Exemplos:
+1. COMPRAR
+2. NEGOCIAR
+3. COMPRAR SOMENTE ABAIXO DE X
+4. ALTO RISCO
+5. NÃO COMPRAR
 
-COMPRAR
+56: Se um car flipper (aquele que vive de comprar carros baratos e revender mais caros) quiser utilizar a aplicação, ela já estaria servindo a ele com eficácia ou precisaria de muitos ajustes e atualizações?
+57: R: Na versão inicial serviria como uma boa calculadora, mas com a atualização v2.5 (Car Flipper Pro), ela se torna altamente eficaz. O aplicativo deixa de ser apenas uma ferramenta de avaliação e passa a integrar todo o fluxo de trabalho: avaliação precisa na compra, pipeline Kanban visual de preparação das falhas detectadas (Oficina, Estética) e acompanhamento rigoroso de despesas até a venda final.
 
-NEGOCIAR
+59: Se um car flipper (aquele que vive de comprar carros baratos e revender mais caros) já tiver um conhecimento vasto sobre o assunto, o app será realmente útil? ou apenas "bom"?
+60: R: Será indispensável e não apenas "bom". Para um especialista, o valor da ferramenta não está em "ensinar a comprar", mas em atuar como um rigoroso diário de bordo financeiro e operacional. Ele remove o viés emocional das compras através do Score e centraliza métricas vitais como ROI, tempo médio de pátio (aging) e capital alocado por fase. Além disso, garante que o processo de due-diligence seja sempre padronizado, evitando esquecimentos por excesso de confiança.
 
-COMPRAR SOMENTE ABAIXO DE X
-
-ALTO RISCO
-
-NÃO COMPRAR
+62: Se um car flipper (aquele que vive de comprar carros baratos e revender mais caros) quiser utilizar a aplicação como gestor dos carros que ele tem em estoque, será que ele se sentirá confortável e satisfeito ao utilizar o app?
+63: R: Extremamente satisfeito e confortável. A introdução do painel Kanban de Estoque na v2.5 permite uma gestão visual clara: o flipper pode arrastar os carros pelas fases de preparação (Oficina, Estética, Anunciado), anexar e acompanhar despesas e tarefas específicas (ex: peças compradas vs pendentes), visualizando o custo acumulado em tempo real. Isso transforma o app no seu principal software de gestão (ERP/CRM) do dia a dia.

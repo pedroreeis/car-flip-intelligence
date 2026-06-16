@@ -3,7 +3,25 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Autocomplete from '@/components/Autocomplete';
 import styles from './wizard.module.css';
+
+const STRUCTURE_DEFECTS = [
+  { id: 's1', label: 'Pintura de Peça', cost: 500 },
+  { id: 's2', label: 'Polimento Geral', cost: 400 },
+  { id: 's3', label: 'Martelinho de Ouro', cost: 250 },
+  { id: 's4', label: 'Higienização Interna', cost: 300 },
+  { id: 's5', label: 'Reparo de Rodas', cost: 400 },
+];
+
+const MECHANIC_DEFECTS = [
+  { id: 'm1', label: 'Óleo e Filtros', cost: 350 },
+  { id: 'm2', label: 'Correia Dentada', cost: 900 },
+  { id: 'm3', label: 'Pneus Novos', cost: 1500 },
+  { id: 'm4', label: 'Amortecedores', cost: 1200 },
+  { id: 'm5', label: 'Bateria', cost: 450 },
+  { id: 'm6', label: 'Freios', cost: 600 },
+];
 
 export default function NewEvaluation() {
   const { user, loading, fetchWithAuth } = useAuth();
@@ -27,9 +45,16 @@ export default function NewEvaluation() {
     docLeilao: false,
     docSinistro: false,
     docRestricao: false,
-    estruturaOk: true,
-    mecanicaOk: true,
   });
+
+  const [selectedStructureDefects, setSelectedStructureDefects] = useState<any[]>([]);
+  const [selectedMechanicDefects, setSelectedMechanicDefects] = useState<any[]>([]);
+
+  const [otherStructureName, setOtherStructureName] = useState('');
+  const [otherStructureCost, setOtherStructureCost] = useState('');
+
+  const [otherMechanicName, setOtherMechanicName] = useState('');
+  const [otherMechanicCost, setOtherMechanicCost] = useState('');
 
   // FIPE States
   const [fipeBrands, setFipeBrands] = useState<any[]>([]);
@@ -101,25 +126,21 @@ export default function NewEvaluation() {
     }
   };
 
-  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = e.target.value;
+  const handleBrandChange = (code: string) => {
     const name = fipeBrands.find(b => b.code === code)?.name || '';
     setSelectedBrandCode(code);
     setFormData(prev => ({ ...prev, brand: name, model: '', year: '' }));
   };
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = e.target.value;
+  const handleModelChange = (code: string) => {
     const name = fipeModels.find(m => m.code === code)?.name || '';
     setSelectedModelCode(code);
     setFormData(prev => ({ ...prev, model: name, year: '' }));
   };
 
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = e.target.value;
+  const handleYearChange = (code: string) => {
     const name = fipeYears.find(y => y.code === code)?.name || '';
     setSelectedYearCode(code);
-    // Extrai o ano do código (ex: "1992-1" -> "1992") ou envia o código direto, o backend usa parseInt
     setFormData(prev => ({ ...prev, year: code }));
   };
 
@@ -141,7 +162,13 @@ export default function NewEvaluation() {
       const res = await fetchWithAuth('/api/evaluations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: user.uid, images: imageUrls })
+        body: JSON.stringify({ 
+          ...formData, 
+          userId: user.uid, 
+          images: imageUrls,
+          structureDefects: selectedStructureDefects,
+          mechanicDefects: selectedMechanicDefects
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -163,20 +190,28 @@ export default function NewEvaluation() {
           <div className={styles.stepContent}>
             <h2>1. Cadastro do Veículo</h2>
             
-            <select name="brandCode" value={selectedBrandCode} onChange={handleBrandChange} className={styles.input}>
-              <option value="">Selecione a Marca...</option>
-              {fipeBrands.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
-            </select>
+            <Autocomplete 
+              options={fipeBrands} 
+              value={selectedBrandCode} 
+              onChange={handleBrandChange} 
+              placeholder="Digite a Marca..." 
+            />
 
-            <select name="modelCode" value={selectedModelCode} onChange={handleModelChange} className={styles.input} disabled={!selectedBrandCode}>
-              <option value="">Selecione o Modelo...</option>
-              {fipeModels.map(m => <option key={m.code} value={m.code}>{m.name}</option>)}
-            </select>
+            <Autocomplete 
+              options={fipeModels} 
+              value={selectedModelCode} 
+              onChange={handleModelChange} 
+              placeholder="Digite o Modelo..." 
+              disabled={!selectedBrandCode}
+            />
 
-            <select name="yearCode" value={selectedYearCode} onChange={handleYearChange} className={styles.input} disabled={!selectedModelCode}>
-              <option value="">Selecione o Ano/Combustível...</option>
-              {fipeYears.map(y => <option key={y.code} value={y.code}>{y.name}</option>)}
-            </select>
+            <Autocomplete 
+              options={fipeYears} 
+              value={selectedYearCode} 
+              onChange={handleYearChange} 
+              placeholder="Digite o Ano/Combustível..." 
+              disabled={!selectedModelCode}
+            />
 
             <input name="vin" placeholder="VIN / Chassi (Opcional)" value={formData.vin} onChange={handleChange} className={styles.input} />
             <input name="askingPrice" type="number" placeholder="Preço Pedido (R$)" value={formData.askingPrice} onChange={handleChange} className={styles.input} />
@@ -217,22 +252,124 @@ export default function NewEvaluation() {
         {step === 4 && (
           <div className={styles.stepContent}>
             <h2>4. Estrutura e Funilaria</h2>
-            <label className={styles.checkboxLabel}>
-              <input type="checkbox" name="estruturaOk" checked={formData.estruturaOk} onChange={handleChange} />
-              Marcar tudo como OK (Sem danos estruturais graves)
-            </label>
-            {!formData.estruturaOk && <p className={styles.note}>No MVP, desmarcar isso aplicará uma penalidade fixa no score.</p>}
+            <p className={styles.note}>Selecione os defeitos encontrados e ajuste o custo estimado se necessário:</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '1rem' }}>
+              {STRUCTURE_DEFECTS.map(defect => {
+                const isSelected = selectedStructureDefects.find(d => d.id === defect.id);
+                return (
+                  <label key={defect.id} className={styles.checkboxLabel} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                    <span>
+                      <input 
+                        type="checkbox" 
+                        checked={!!isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedStructureDefects([...selectedStructureDefects, { ...defect }]);
+                          else setSelectedStructureDefects(selectedStructureDefects.filter(d => d.id !== defect.id));
+                        }} 
+                      />
+                      {' ' + defect.label}
+                    </span>
+                    {isSelected ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        R$ 
+                        <input 
+                          type="number" 
+                          value={isSelected.cost} 
+                          onChange={e => setSelectedStructureDefects(selectedStructureDefects.map(d => d.id === defect.id ? { ...d, cost: parseFloat(e.target.value) || 0 } : d))}
+                          style={{ width: '80px', padding: '0.2rem', margin: 0 }}
+                          className={styles.input}
+                        />
+                      </div>
+                    ) : (
+                      <strong style={{ color: 'var(--text-muted)' }}>R$ {defect.cost}</strong>
+                    )}
+                  </label>
+                )
+              })}
+              
+              <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Outro Defeito:</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input type="text" placeholder="Descrição" value={otherStructureName} onChange={e => setOtherStructureName(e.target.value)} className={styles.input} style={{ flex: 2, margin: 0 }} />
+                  <input type="number" placeholder="Custo (R$)" value={otherStructureCost} onChange={e => setOtherStructureCost(e.target.value)} className={styles.input} style={{ flex: 1, margin: 0 }} />
+                  <button type="button" className={styles.btnSecondary} onClick={() => {
+                    if (otherStructureName && otherStructureCost) {
+                      setSelectedStructureDefects([...selectedStructureDefects, { id: 's_other_' + Date.now(), label: otherStructureName, cost: parseFloat(otherStructureCost) || 0 }]);
+                      setOtherStructureName('');
+                      setOtherStructureCost('');
+                    }
+                  }}>Adicionar</button>
+                </div>
+                {selectedStructureDefects.filter(d => d.id.startsWith('s_other')).map(d => (
+                   <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--surface-color)', marginTop: '0.5rem', borderRadius: '4px' }}>
+                     <span>{d.label}</span>
+                     <span>R$ {d.cost} <button onClick={() => setSelectedStructureDefects(selectedStructureDefects.filter(x => x.id !== d.id))} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer', marginLeft: '1rem' }}>X</button></span>
+                   </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {step === 5 && (
           <div className={styles.stepContent}>
             <h2>5. Avaliação Mecânica</h2>
-            <label className={styles.checkboxLabel}>
-              <input type="checkbox" name="mecanicaOk" checked={formData.mecanicaOk} onChange={handleChange} />
-              Marcar tudo como OK (Sem problemas mecânicos graves)
-            </label>
-            {!formData.mecanicaOk && <p className={styles.note}>No MVP, desmarcar isso reduzirá o lucro estimado em R$ 3.000 (reserva técnica).</p>}
+            <p className={styles.note}>Selecione os reparos mecânicos necessários e ajuste os valores:</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '1rem' }}>
+              {MECHANIC_DEFECTS.map(defect => {
+                const isSelected = selectedMechanicDefects.find(d => d.id === defect.id);
+                return (
+                  <label key={defect.id} className={styles.checkboxLabel} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                    <span>
+                      <input 
+                        type="checkbox" 
+                        checked={!!isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedMechanicDefects([...selectedMechanicDefects, { ...defect }]);
+                          else setSelectedMechanicDefects(selectedMechanicDefects.filter(d => d.id !== defect.id));
+                        }} 
+                      />
+                      {' ' + defect.label}
+                    </span>
+                    {isSelected ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        R$ 
+                        <input 
+                          type="number" 
+                          value={isSelected.cost} 
+                          onChange={e => setSelectedMechanicDefects(selectedMechanicDefects.map(d => d.id === defect.id ? { ...d, cost: parseFloat(e.target.value) || 0 } : d))}
+                          style={{ width: '80px', padding: '0.2rem', margin: 0 }}
+                          className={styles.input}
+                        />
+                      </div>
+                    ) : (
+                      <strong style={{ color: 'var(--text-muted)' }}>R$ {defect.cost}</strong>
+                    )}
+                  </label>
+                )
+              })}
+              
+              <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Outro Reparo:</p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input type="text" placeholder="Descrição" value={otherMechanicName} onChange={e => setOtherMechanicName(e.target.value)} className={styles.input} style={{ flex: 2, margin: 0 }} />
+                  <input type="number" placeholder="Custo (R$)" value={otherMechanicCost} onChange={e => setOtherMechanicCost(e.target.value)} className={styles.input} style={{ flex: 1, margin: 0 }} />
+                  <button type="button" className={styles.btnSecondary} onClick={() => {
+                    if (otherMechanicName && otherMechanicCost) {
+                      setSelectedMechanicDefects([...selectedMechanicDefects, { id: 'm_other_' + Date.now(), label: otherMechanicName, cost: parseFloat(otherMechanicCost) || 0 }]);
+                      setOtherMechanicName('');
+                      setOtherMechanicCost('');
+                    }
+                  }}>Adicionar</button>
+                </div>
+                {selectedMechanicDefects.filter(d => d.id.startsWith('m_other')).map(d => (
+                   <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'var(--surface-color)', marginTop: '0.5rem', borderRadius: '4px' }}>
+                     <span>{d.label}</span>
+                     <span>R$ {d.cost} <button onClick={() => setSelectedMechanicDefects(selectedMechanicDefects.filter(x => x.id !== d.id))} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer', marginLeft: '1rem' }}>X</button></span>
+                   </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

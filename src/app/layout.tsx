@@ -41,7 +41,6 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${merriweather.variable} ${inter.variable}`}>
       <body>
         <AuthProvider>
-          <Header />
           <Navbar />
           <main className="main-content">
             {children}

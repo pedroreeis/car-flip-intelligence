@@ -17,8 +17,12 @@ export async function POST(req: Request) {
     const estimatedSalePrice = parseFloat(data.estimatedSalePrice) || 0;
     
     let costs = 1000; // Custo base (docs/transporte no MVP)
-    if (!data.estruturaOk) costs += 5000;
-    if (!data.mecanicaOk) costs += 3000;
+    
+    const structureDefects = data.structureDefects || [];
+    const mechanicDefects = data.mechanicDefects || [];
+    
+    structureDefects.forEach((d: any) => { costs += d.cost; });
+    mechanicDefects.forEach((d: any) => { costs += d.cost; });
     
     const totalInvestment = askingPrice + costs;
     const estimatedProfit = estimatedSalePrice - totalInvestment;
@@ -28,7 +32,7 @@ export async function POST(req: Request) {
     let riskScore = 10;
     if (data.docLeilao) riskScore += 50;
     if (data.docSinistro) riskScore += 30;
-    if (!data.estruturaOk) riskScore += 20;
+    if (structureDefects.length > 0) riskScore += 10 * structureDefects.length;
     
     let attractivenessScore = Math.min(100, Math.max(0, (estimatedRoi * 2) - (riskScore / 2)));
     
@@ -97,8 +101,14 @@ export async function POST(req: Request) {
         recommendation,
         images: data.images || [],
         documentation: { leilao: data.docLeilao, sinistro: data.docSinistro, restricao: data.docRestricao },
-        structure: { ok: data.estruturaOk },
-        mechanics: { ok: data.mecanicaOk },
+        structure: { defects: structureDefects },
+        mechanics: { defects: mechanicDefects },
+        tasks: {
+          create: [
+            ...structureDefects.map((d: any) => ({ title: d.label, costEstimate: d.cost })),
+            ...mechanicDefects.map((d: any) => ({ title: d.label, costEstimate: d.cost }))
+          ]
+        }
       }
     });
 

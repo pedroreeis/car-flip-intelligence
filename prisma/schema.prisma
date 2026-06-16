@@ -28,6 +28,14 @@ model Vehicle {
   updatedAt   DateTime     @updatedAt
 }
 
+enum InventoryStage {
+  PURCHASED
+  IN_REPAIR
+  IN_DETAILING
+  READY_FOR_SALE
+  ADVERTISED
+}
+
 enum EvaluationStatus {
   DRAFT
   APPROVED
@@ -44,6 +52,7 @@ model Evaluation {
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
 
   status EvaluationStatus @default(DRAFT)
+  inventoryStage InventoryStage? @default(PURCHASED)
 
   // Modulo 1: Cadastro base
   origin      String?
@@ -74,6 +83,7 @@ model Evaluation {
 
   closedCase ClosedCase?
   expenses   Expense[]
+  tasks      PreparationTask[]
 }
 
 model Expense {
@@ -83,6 +93,19 @@ model Expense {
   description  String
   amount       Float
   date         DateTime   @default(now())
+}
+
+model PreparationTask {
+  id           String     @id @default(uuid())
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+  title        String
+  description  String?
+  costEstimate Float?
+  actualCost   Float?
+  isCompleted  Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model ClosedCase {

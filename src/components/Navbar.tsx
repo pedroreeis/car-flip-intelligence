@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LineChart, ClipboardList, PenTool, ChevronDown, User } from 'lucide-react';
+import { Home, LineChart, ClipboardList, PenTool, ChevronDown, User, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './Navbar.module.css';
 
@@ -14,6 +14,7 @@ export default function Navbar() {
 
   const links = [
     { name: 'INÍCIO', path: '/', icon: Home },
+    { name: 'DASHBOARD', path: '/dashboard', icon: TrendingUp },
     { name: 'ESTOQUE', path: '/inventory', icon: LineChart },
     { name: 'AVALIAÇÕES', path: '/evaluations', icon: ClipboardList },
     { name: 'FERRAMENTAS', path: '/tools', icon: PenTool },
@@ -23,7 +24,12 @@ export default function Navbar() {
     <>
       <nav className={styles.navbar}>
         <div className={styles.navContainer}>
-          <div className={styles.navLinks}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: '1.2rem', marginRight: '2rem', letterSpacing: '-0.5px' }}>
+              <span style={{ color: '#111' }}>CarFlip</span>
+              <span style={{ color: 'rgba(0,0,0,0.6)' }}>.PRO</span>
+            </div>
+            <div className={styles.navLinks}>
             {links.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.path || (link.path !== '/' && pathname?.startsWith(link.path));
@@ -34,6 +40,7 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            </div>
           </div>
 
           {user && (
@@ -63,23 +70,7 @@ export default function Navbar() {
         </div>
       </nav>
       
-      {/* Sub-bar / Breadcrumb Area as shown in the image */}
-      <div className={styles.subNavbar}>
-        <div className={styles.subNavContainer}>
-          <div className={styles.breadcrumbCard}>
-            <div className={styles.breadcrumbHome}>
-              <Home size={16} />
-            </div>
-            <div className={styles.breadcrumbActive}>
-              {pathname === '/' ? 'Dashboard' : 
-               pathname.startsWith('/evaluations') ? 'Avaliações' : 
-               pathname.startsWith('/inventory') ? 'Estoque' : 'Página'}
-            </div>
-          </div>
-          <div className={styles.subNavIcons}>
-          </div>
-        </div>
-      </div>
+
     </>
   );
 }

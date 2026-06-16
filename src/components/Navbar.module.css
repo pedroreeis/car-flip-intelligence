@@ -1,9 +1,10 @@
 .navbar {
   position: sticky;
   top: 0;
-  background-color: var(--primary-color);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: var(--secondary-color); /* Amarelo Forte */
+  color: #111; /* Texto bem escuro para contraste */
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 100;
 }
 
@@ -39,7 +40,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(0, 0, 0, 0.6); /* Preto suave */
   font-weight: 700;
   font-size: 0.85rem;
   transition: all 0.2s ease;
@@ -47,18 +48,19 @@
 }
 
 .navItem:hover {
-  color: #fff;
+  color: #111;
 }
 
 .active {
-  color: #fff;
-  border-bottom-color: #fff;
+  color: #111;
+  border-bottom-color: #111;
 }
 
 /* Sub-Navbar (Breadcrumb area) */
 .subNavbar {
-  background-color: var(--secondary-color);
+  background-color: var(--secondary-color); /* The gold/yellow color */
   color: #fff;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .subNavContainer {
@@ -83,7 +85,7 @@
 }
 
 .breadcrumbHome {
-  background-color: #0b1528; /* Darker accent */
+  background-color: rgba(0,0,0,0.15); /* Darker accent */
   padding: 0.5rem 1rem;
   display: flex;
   align-items: center;
@@ -117,7 +119,7 @@
   gap: 0.5rem;
   background: transparent;
   border: none;
-  color: #fff;
+  color: #111;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -125,20 +127,21 @@
 }
 
 .userMenuBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .avatar {
   width: 28px;
   height: 28px;
-  background: #0b1528;
+  background: rgba(0,0,0,0.1);
+  color: #111;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 0.9rem;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .userName {

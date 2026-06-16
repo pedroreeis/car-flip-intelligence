@@ -1,16 +1,16 @@
 :root {
-  --primary-color: #0d6efd; /* Bright blue like the reference image */
-  --primary-hover: #0b5ed7;
-  --secondary-color: #0b1528; /* Very dark navy blue */
-  --bg-color: #f1f3f5; /* Light gray background */
+  --primary-color: #08acfc; /* Light Blue */
+  --primary-hover: #069add;
+  --secondary-color: #e8a408; /* Yellow/Gold */
+  --bg-color: #f1f3f6; /* Solid platform background */
   --card-bg: #FFFFFF;
-  --text-color: #1E293B;
-  --text-muted: #64748B;
+  --text-color: #1c1c1e; /* Apple-like dark gray */
+  --text-muted: #8e8e93; /* Apple-like light gray */
   
-  --success: #10B981;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --border: #e9ecef;
+  --success: #34c759; /* Apple iOS Green */
+  --warning: #ffcc00; /* Apple iOS Yellow */
+  --danger: #ff3b30;  /* Apple iOS Red */
+  --border: rgba(0, 0, 0, 0.08); /* Subtle software border */
 }
 
 body {
@@ -23,8 +23,8 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-inter), sans-serif; /* Moving away from Merriweather for a more modern tech look */
-  color: var(--secondary-color);
+  font-family: var(--font-inter), sans-serif;
+  color: var(--text-color);
   margin-top: 0;
 }
 
@@ -42,6 +42,22 @@ a {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+/* Apple-style UI Utilities */
+.squircle {
+  border-radius: 12px;
+}
+
+.shadow-apple {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.panel-solid {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 .badge {
