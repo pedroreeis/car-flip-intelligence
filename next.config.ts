@@ -10,7 +10,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   turbopack: {},
-  serverExternalPackages: ["firebase-admin"],
+  serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
 };
 
 export default withPWA(nextConfig);
