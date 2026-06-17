@@ -32,5 +32,8 @@
     "eslint-config-next": "16.2.9",
     "prisma": "^7.8.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "jose": "^5.0.0"
   }
 }
